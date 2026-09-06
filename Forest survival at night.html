@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Horror Forest 3D - Ultimate Survival Edition</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none;
+        }
+        #landscape-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #050202;
+            z-index: 1000;
+            color: #ff3333;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #damage-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            z-index: 50;
+            transition: background 0.1s ease;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 6px 10px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            z-index: 10;
+            user-select: none;
+        }
+        #hud h4 {
+            margin: 0 0 4px 0;
+            color: #ff5555;
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+        #hp-display {
+            font-size: 11px;
+            color: #ff3333;
+            text-align: center;
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+        #timer-display {
+            font-size: 11px;
+            color: #ffaa00;
+            text-align: center;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 30px);
+            gap: 3px;
+        }
+        .slot {
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            position: relative;
+            cursor: pointer;
+        }
+        .slot:hover {
+            border-color: #ffaa00;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .slot-count {
+            position: absolute;
+            bottom: 1px;
+            right: 2px;
+            font-size: 8px;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+        #action-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: row;
+            gap: 6px;
+            z-index: 10;
+        }
+        .action-btn {
+            background: rgba(20, 20, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            font-size: 11px;
+        }
+        .action-btn:active {
+            background: rgba(60, 60, 60, 0.9);
+            transform: scale(0.95);
+        }
+        #crafting-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 15, 0.95);
+            border: 2px solid #550000;
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            width: 280px;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+            user-select: none;
+        }
+        #crafting-panel h3 {
+            margin-top: 0;
+            color: #ff3333;
+            text-align: center;
+            font-size: 13px;
+        }
+        .recipe-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        .recipe-btn {
+            background: #880000;
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .close-craft {
+            width: 100%;
+            background: #333;
+            margin-top: 6px;
+            border: none;
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        #jumpscare-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, #ff0000 0%, #330000 50%, #000000 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: #ffffff;
+            text-align: center;
+            animation: flashBg 0.15s infinite alternate;
+        }
+        @keyframes flashBg {
+            0% { background-color: #330000; }
+            100% { background-color: #aa0000; }
+        }
+        #jumpscare-screen h1 {
+            font-size: 36px;
+            margin: 0;
+            color: #ffcccc;
+            text-shadow: 0 0 25px #ff0000, 0 0 10px #000;
+            animation: scifiShake 0.08s infinite;
+        }
+        @keyframes scifiShake {
+            0% { transform: translate(3px, 3px) rotate(1deg); }
+            50% { transform: translate(-3px, -3px) rotate(-1deg); }
+            100% { transform: translate(3px, -3px) rotate(0deg); }
+        }
+        #controls-ui {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+            user-select: none;
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .dpad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .dpad-row {
+            display: flex;
+            gap: 40px;
+        }
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            font-size: 18px;
+            border-radius: 12px;
+            outline: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .control-btn:active {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(0.95);
+        }
+        .sprint-btn {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 170, 0, 0.25);
+            border: 1px solid #ffaa00;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sprint-btn:active, .sprint-btn.active {
+            background: rgba(255, 170, 0, 0.6);
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="landscape-warning">
+        📱 ATTENTION!<br><br>This game is designed to be played only in landscape orientation.<br><br>Please rotate your device!
+    </div>
+
+    <div id="damage-flash"></div>
+    <div id="crosshair"></div>
+
+    <div id="jumpscare-screen">
+        <h1>BAARNEN C16 CAUGHT YOU!</h1>
+        <p style="font-size: 16px; margin-top: 15px; font-weight: bold;">His big cat ears heard every step you took...</p>
+        <button onclick="resetGameSave()" style="margin-top: 25px; padding: 10px 20px; background: #000; color: #ff5555; border: 2px solid #ff0000; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px;">Try Again</button>
+    </div>
+
+    <div id="hud">
+        <h4>INVENTORY</h4>
+        <div id="hp-display">❤️ HP: 100</div>
+        <div id="timer-display">⏱️ 02:00</div>
+        <div class="inventory-grid" id="inv-grid"></div>
+    </div>
+
+    <div id="action-buttons">
+        <button class="action-btn" id="btn-audio">🔊 Audio</button>
+        <button class="action-btn" id="btn-flashlight">🔦 Light</button>
+        <button class="action-btn" id="btn-craft" style="background: #550000;">🛠️ Craft</button>
+        <button class="action-btn" id="btn-chop" style="display:none; background: #004400;">🪓 Chop</button>
+        <button class="action-btn" id="btn-kill-rabbit" style="display:none; background: #884400;">🐰 Hunt</button>
+        <button class="action-btn" id="btn-save" style="background: #002244;" onclick="saveGameData()">💾 Save</button>
+    </div>
+
+    <div id="crafting-panel">
+        <h3>CRAFTING MENU</h3>
+        <div class="recipe-item">
+            <div>🔥 Campfire<br><small style="color:#aaa;">5 planks</small></div>
+            <button class="recipe-btn" onclick="craftItem('campfire')">Craft</button>
+        </div>
+        <div class="recipe-item">
+            <div>🧱 Wooden Wall<br><small style="color:#aaa;">4 planks</small></div>
+            <button class="recipe-btn" onclick="craftItem('wall')">Craft</button>
+        </div>
+        <div class="recipe-item">
+            <div>🔦 Torch<br><small style="color:#aaa;">2 planks, 1 leaf</small></div>
+            <button class="recipe-btn" onclick="craftItem('torch')">Craft</button>
+        </div>
+        <div class="recipe-item">
+            <div>🪤 Bear Trap<br><small style="color:#aaa;">3 planks, 2 leaves</small></div>
+            <button class="recipe-btn" onclick="craftItem('trap')">Craft</button>
+        </div>
+        <div class="recipe-item">
+            <div>🍖 Cook Meat<br><small style="color:#aaa;">1 raw meat (+15 HP)</small></div>
+            <button class="recipe-btn" onclick="craftItem('cook_meat')">Cook</button>
+        </div>
+        <div class="recipe-item">
+            <div>🩹 Bandage<br><small style="color:#aaa;">3 leaves</small></div>
+            <button class="recipe-btn" onclick="craftItem('bandage')">Craft</button>
+        </div>
+        <button class="close-craft" onclick="toggleCrafting(false)">Close</button>
+    </div>
+
+    <div id="controls-ui">
+        <div class="dpad">
+            <button class="control-btn" id="btn-forward">▲</button>
+            <div class="dpad-row">
+                <button class="control-btn" id="btn-left">◀</button>
+                <button class="control-btn" id="btn-right">▶</button>
+            </div>
+            <button class="control-btn" id="btn-backward">▼</button>
+        </div>
+        <button class="sprint-btn" id="btn-sprint">RUN</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        let scene, camera, renderer;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false;
+        let prevTime = performance.now();
+
+        let playerHP = 100;
+
+        let inventory = [
+            { id: 'axe', name: 'Axe', icon: '🪓', count: 1 },
+            { id: 'planks', name: 'Planks', icon: '🪵', count: 0 },
+            { id: 'leaves', name: 'Leaves', icon: '🍃', count: 0 },
+            { id: 'raw_meat', name: 'Raw Meat', icon: '🥩', count: 0 },
+            { id: 'cooked_meat', name: 'Cooked Meat', icon: '🍖', count: 0 },
+            { id: 'campfire', name: 'Campfire', icon: '🔥', count: 0 },
+            { id: 'wall', name: 'Wall', icon: '🧱', count: 0 },
+            { id: 'torch', name: 'Torch', icon: '🔦', count: 0 },
+            { id: 'trap', name: 'Trap', icon: '🪤', count: 0 },
+            { id: 'bandage', name: 'Bandage', icon: '🩹', count: 0 }
+        ];
+
+        let flashlightLight;
+        let trees = [];
+        let nearestTree = null;
+        let rabbits = [];
+        let nearestRabbit = null;
+        let campfires = [];
+        let placedWalls = [];
+        let torches = [];
+        let traps = [];
+
+        let catPetGroup = null;
+
+        let timeRemaining = 120;
+        let survivalTimeRemaining = 120;
+        let monsterSpawned = false;
+        let monsterGroup = null;
+        let monsterSpeed = 3.2;
+        let gameIsOver = false;
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+        let audioCtx = null;
+        let audioEnabled = false;
+
+        init();
+        animate();
+
+        function init() {
+            checkOrientation();
+            window.addEventListener('resize', onWindowResize);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020408);
+            scene.fog = new THREE.FogExp2(0x020408, 0.035);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.8, 14);
+
+            flashlightLight = new THREE.SpotLight(0xffffee, 6.0, 40, Math.PI / 5, 0.5, 1.5);
+            flashlightLight.position.set(0, 0, 0);
+            flashlightLight.visible = false;
+            camera.add(flashlightLight);
+            flashlightLight.target.position.set(0, 0, -10);
+            camera.add(flashlightLight.target);
+            scene.add(camera);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            window.addEventListener('pointerdown', (e) => {
+                if (gameIsOver) return;
+                if (e.target.tagName === 'BUTTON' || e.target.closest('#crafting-panel') || e.target.closest('#hud')) return;
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging || gameIsOver) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+
+                euler.setFromQuaternion(camera.quaternion);
+                euler.y -= deltaX * 0.003;
+                euler.x -= deltaY * 0.003;
+                euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+                camera.quaternion.setFromEuler(euler);
+            });
+
+            window.addEventListener('pointerup', () => { isDragging = false; });
+
+            setupButton('btn-forward', (state) => { moveForward = state; });
+            setupButton('btn-backward', (state) => { moveBackward = state; });
+            setupButton('btn-left', (state) => { moveLeft = state; });
+            setupButton('btn-right', (state) => { moveRight = state; });
+            setupButton('btn-sprint', (state) => { 
+                isSprinting = state;
+                const btn = document.getElementById('btn-sprint');
+                if(state) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            document.getElementById('btn-flashlight').addEventListener('click', toggleFlashlight);
+            document.getElementById('btn-craft').addEventListener('click', () => toggleCrafting(true));
+            document.getElementById('btn-chop').addEventListener('click', chopTree);
+            document.getElementById('btn-kill-rabbit').addEventListener('click', killRabbit);
+            document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+
+            window.addEventListener('keydown', (e) => {
+                if (gameIsOver) return;
+                handleKey(e, true);
+                if (e.code === 'KeyF') toggleFlashlight();
+                if (e.code === 'KeyC') toggleCrafting();
+                if (e.code === 'ShiftLeft') isSprinting = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                handleKey(e, false);
+                if (e.code === 'ShiftLeft') isSprinting = false;
+            });
+
+            const ambientLight = new THREE.AmbientLight(0x2a3b5c, 0.9);
+            scene.add(ambientLight);
+
+            const moonLight = new THREE.DirectionalLight(0x6b8bc3, 0.7);
+            moonLight.position.set(50, 80, 50);
+            moonLight.castShadow = true;
+            scene.add(moonLight);
+
+            const groundGeo = new THREE.PlaneGeometry(400, 400, 64, 64);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x0c160c, roughness: 0.95 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            createHouse();
+            createForest();
+            createRabbits();
+            createCatPet();
+
+            loadGameData();
+            updateInventoryUI();
+            updateHPUI();
+
+            setInterval(updateTimer, 1000);
+        }
+
+        function createCatPet() {
+            const catGroup = new THREE.Group();
+            const matBrown = new THREE.MeshStandardMaterial({ color: 0x5a331c, roughness: 0.8 });
+            const matCap = new THREE.MeshStandardMaterial({ color: 0x1e3f66, roughness: 0.5 });
+            const matDetails = new THREE.MeshStandardMaterial({ color: 0x3d2010, roughness: 0.7 });
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.5), matBrown);
+            body.position.y = 0.2;
+            catGroup.add(body);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.22, 0.25), matBrown);
+            head.position.set(0, 0.35, 0.25);
+            catGroup.add(head);
+
+            // Ears
+            const earGeo = new THREE.ConeGeometry(0.06, 0.12, 4);
+            const leftEar = new THREE.Mesh(earGeo, matDetails);
+            leftEar.position.set(-0.08, 0.5, 0.25);
+            catGroup.add(leftEar);
+            const rightEar = new THREE.Mesh(earGeo, matDetails);
+            rightEar.position.set(0.08, 0.5, 0.25);
+            catGroup.add(rightEar);
+
+            // Blue cap on pet cat
+            const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 12), matCap);
+            capBase.position.set(0, 0.48, 0.25);
+            catGroup.add(capBase);
+            const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.12), matCap);
+            capVisor.position.set(0, 0.45, 0.33);
+            catGroup.add(capVisor);
+
+            // Tail
+            const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4), matBrown);
+            tail.position.set(0, 0.35, -0.3);
+            tail.rotation.x = Math.PI / 4;
+            catGroup.add(tail);
+
+            catGroup.position.set(2, 0, 2);
+            scene.add(catGroup);
+            catPetGroup = catGroup;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            checkOrientation();
+        }
+
+        function toggleAudio() {
+            if (!audioEnabled) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioEnabled = true;
+                document.getElementById('btn-audio').style.borderColor = '#55ff55';
+                document.getElementById('btn-audio').innerText = '🔊 On';
+                startAmbientSound();
+            } else {
+                audioEnabled = false;
+                if (audioCtx) audioCtx.close();
+                document.getElementById('btn-audio').style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                document.getElementById('btn-audio').innerText = '🔊 Audio';
+            }
+        }
+
+        function startAmbientSound() {
+            if (!audioEnabled || !audioCtx) return;
+            const bufferSize = 2 * audioCtx.sampleRate,
+                noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate),
+                output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            const whiteNoise = audioCtx.createBufferSource();
+            whiteNoise.buffer = noiseBuffer;
+            whiteNoise.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 180;
+
+            whiteNoise.connect(filter);
+            filter.connect(audioCtx.destination);
+            whiteNoise.start(0);
+        }
+
+        function checkOrientation() {
+            const warning = document.getElementById('landscape-warning');
+            if (window.innerHeight > window.innerWidth) {
+                warning.style.display = 'flex';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function updateTimer() {
+            if (gameIsOver) return;
+
+            if (!monsterSpawned) {
+                if (timeRemaining > 0) {
+                    timeRemaining--;
+                    const mins = Math.floor(timeRemaining / 60);
+                    const secs = timeRemaining % 60;
+                    document.getElementById('timer-display').innerText = `⏱️ Spawn in: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (timeRemaining === 0) {
+                        spawnBaarnenC16();
+                    }
+                }
+            } else {
+                if (survivalTimeRemaining > 0) {
+                    survivalTimeRemaining--;
+                    const mins = Math.floor(survivalTimeRemaining / 60);
+                    const secs = survivalTimeRemaining % 60;
+                    document.getElementById('timer-display').innerText = `⚠️ SURVIVE: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    document.getElementById('timer-display').style.color = "#ff3333";
+
+                    if (survivalTimeRemaining === 0) {
+                        scene.remove(monsterGroup);
+                        monsterGroup = null;
+                        monsterSpawned = false;
+                        timeRemaining = 120;
+                        survivalTimeRemaining = 120;
+                        document.getElementById('timer-display').style.color = "#ffaa00";
+                        alert("🎉 You survived! Baarnen C16 retreated into the dark. New cycle started!");
+                    }
+                }
+            }
+        }
+
+        function spawnBaarnenC16() {
+            monsterSpawned = true;
+            document.getElementById('timer-display').innerText = "⚠️ BAARNEN C16 IS HUNTING!";
+
+            const mGroup = new THREE.Group();
+            const matBrown = new THREE.MeshStandardMaterial({ color: 0x4a2a18, roughness: 0.8 });
+            const matCap = new THREE.MeshStandardMaterial({ color: 0x1e3f66, roughness: 0.5 });
+            const matEyes = new THREE.MeshBasicMaterial({ color: 0x8b5a2b });
+            const matEars = new THREE.MeshStandardMaterial({ color: 0x5a331c, roughness: 0.7 });
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.4, 0.3), matBrown);
+            torso.position.y = 2.6;
+            mGroup.add(torso);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), matBrown);
+            head.position.y = 4.1;
+            mGroup.add(head);
+
+            const earGeo = new THREE.ConeGeometry(0.18, 0.35, 4);
+            const leftEar = new THREE.Mesh(earGeo, matEars);
+            leftEar.position.set(-0.28, 4.6, 0);
+            leftEar.rotation.z = -0.3;
+            mGroup.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeo, matEars);
+            rightEar.position.set(0.28, 4.6, 0);
+            rightEar.rotation.z = 0.3;
+            mGroup.add(rightEar);
+
+            const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.15, 16), matCap);
+            capBase.position.y = 4.38;
+            mGroup.add(capBase);
+            const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.3), matCap);
+            capVisor.position.set(0, 4.33, 0.25);
+            mGroup.add(capVisor);
+
+            const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.04), matEyes);
+            eye1.position.set(-0.1, 4.15, 0.3);
+            mGroup.add(eye1);
+            const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.04), matEyes);
+            eye2.position.set(0.1, 4.15, 0.3);
+            mGroup.add(eye2);
+
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8);
+            const leftArm = new THREE.Mesh(armGeo, matBrown);
+            leftArm.name = "leftArm";
+            leftArm.position.set(-0.45, 2.5, 0);
+            mGroup.add(leftArm);
+
+            const rightArm = new THREE.Mesh(armGeo, matBrown);
+            rightArm.name = "rightArm";
+            rightArm.position.set(0.45, 2.5, 0);
+            mGroup.add(rightArm);
+
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.4, 8);
+            const leftLeg = new THREE.Mesh(legGeo, matBrown);
+            leftLeg.name = "leftLeg";
+            leftLeg.position.set(-0.2, 1.2, 0);
+            mGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, matBrown);
+            rightLeg.name = "rightLeg";
+            rightLeg.position.set(0.2, 1.2, 0);
+            mGroup.add(rightLeg);
+
+            mGroup.position.set(35, 0, 35);
+            scene.add(mGroup);
+            monsterGroup = mGroup;
+        }
+
+        function updateInventoryUI() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            inventory.forEach((item, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.innerHTML = `
+                    <span>${item.icon}</span>
+                    ${item.count > 0 ? `<span class="slot-count">${item.count}</span>` : ''}
+                `;
+                slot.addEventListener('click', () => {
+                    useInventoryItem(index);
+                });
+                grid.appendChild(slot);
+            });
+        }
+
+        function useInventoryItem(index) {
+            const item = inventory[index];
+            if (item.count <= 0) return;
+
+            if (item.id === 'campfire') {
+                placeCampfire();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            } else if (item.id === 'wall') {
+                placeWall();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            } else if (item.id === 'torch') {
+                placeTorch();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            } else if (item.id === 'trap') {
+                placeTrap();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            } else if (item.id === 'cooked_meat') {
+                playerHP = Math.min(100, playerHP + 15);
+                updateHPUI();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            } else if (item.id === 'bandage') {
+                playerHP = Math.min(100, playerHP + 40);
+                updateHPUI();
+                item.count--;
+                updateInventoryUI();
+                saveGameData();
+            }
+        }
+
+        function placeCampfire(customPos) {
+            const group = new THREE.Group();
+            const logMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.9 });
+            const logGeo = new THREE.BoxGeometry(1.0, 0.18, 0.18);
+
+            const log1 = new THREE.Mesh(logGeo, logMat);
+            log1.position.y = 0.09;
+            group.add(log1);
+
+            const log2 = new THREE.Mesh(logGeo, logMat);
+            log2.position.y = 0.09;
+            log2.rotation.y = Math.PI / 2;
+            group.add(log2);
+
+            const fireMat = new THREE.MeshBasicMaterial({ color: 0xff4500 });
+            const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 6), fireMat);
+            flame.position.y = 0.35;
+            group.add(flame);
+
+            const fireLight = new THREE.PointLight(0xff5500, 3.5, 14);
+            fireLight.position.set(0, 0.4, 0);
+            group.add(fireLight);
+
+            if (customPos) {
+                group.position.set(customPos.x, 0, customPos.z);
+            } else {
+                positionInFrontOfPlayer(group);
+            }
+            scene.add(group);
+
+            campfires.push({ group: group, light: fireLight, flame: flame, baseIntensity: 3.5, x: group.position.x, z: group.position.z });
+        }
+
+        function placeWall(customPos) {
+            const group = new THREE.Group();
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.8 });
+            const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.5, 0.4), wallMat);
+            wallMesh.position.y = 1.25;
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+            group.add(wallMesh);
+
+            if (customPos) {
+                group.position.set(customPos.x, 0, customPos.z);
+            } else {
+                positionInFrontOfPlayer(group);
+            }
+            scene.add(group);
+
+            placedWalls.push({
+                group: group,
+                x: group.position.x,
+                z: group.position.z,
+                radius: 1.6
+            });
+        }
+
+        function placeTorch(customPos) {
+            const group = new THREE.Group();
+            const stickMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
+            const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2), stickMat);
+            stick.position.y = 0.6;
+            group.add(stick);
+
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffaa00 }));
+            tip.position.y = 1.2;
+            group.add(tip);
+
+            const torchLight = new THREE.PointLight(0xffaa00, 4.0, 15);
+            torchLight.position.set(0, 1.3, 0);
+            group.add(torchLight);
+
+            if (customPos) {
+                group.position.set(customPos.x, 0, customPos.z);
+            } else {
+                positionInFrontOfPlayer(group);
+            }
+            scene.add(group);
+            torches.push({ group: group, light: torchLight, tip: tip, x: group.position.x, z: group.position.z });
+        }
+
+        function placeTrap(customPos) {
+            const group = new THREE.Group();
+            const trapMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+            const trapMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), trapMat);
+            trapMesh.position.y = 0.05;
+            group.add(trapMesh);
+
+            if (customPos) {
+                group.position.set(customPos.x, 0, customPos.z);
+            } else {
+                positionInFrontOfPlayer(group);
+            }
+            scene.add(group);
+            traps.push(group);
+        }
+
+        function positionInFrontOfPlayer(objectGroup) {
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            dir.y = 0;
+            dir.normalize();
+            const pos = camera.position.clone().addScaledVector(dir, 2.5);
+            pos.y = 0;
+            objectGroup.position.copy(pos);
+            objectGroup.rotation.y = Math.atan2(-dir.x, -dir.z);
+        }
+
+        function toggleFlashlight() {
+            flashlightLight.visible = !flashlightLight.visible;
+            const btn = document.getElementById('btn-flashlight');
+            btn.style.borderColor = flashlightLight.visible ? '#55ff55' : 'rgba(255, 255, 255, 0.3)';
+        }
+
+        function toggleCrafting(forceState) {
+            const panel = document.getElementById('crafting-panel');
+            if (forceState !== undefined) {
+                panel.style.display = forceState ? 'block' : 'none';
+            } else {
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        function craftItem(type) {
+            if (type === 'campfire') {
+                if (inventory[1].count >= 5) {
+                    inventory[1].count -= 5;
+                    inventory[5].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Not enough planks! Need 5.');
+                }
+            } else if (type === 'wall') {
+                if (inventory[1].count >= 4) {
+                    inventory[1].count -= 4;
+                    inventory[6].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Need 4 planks.');
+                }
+            } else if (type === 'torch') {
+                if (inventory[1].count >= 2 && inventory[2].count >= 1) {
+                    inventory[1].count -= 2;
+                    inventory[2].count -= 1;
+                    inventory[7].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Need 2 planks and 1 leaf.');
+                }
+            } else if (type === 'trap') {
+                if (inventory[1].count >= 3 && inventory[2].count >= 2) {
+                    inventory[1].count -= 3;
+                    inventory[2].count -= 2;
+                    inventory[8].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Need 3 planks and 2 leaves.');
+                }
+            } else if (type === 'cook_meat') {
+                if (inventory[3].count >= 1) {
+                    inventory[3].count -= 1;
+                    inventory[4].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Need raw rabbit meat!');
+                }
+            } else if (type === 'bandage') {
+                if (inventory[2].count >= 3) {
+                    inventory[2].count -= 3;
+                    inventory[9].count += 1;
+                    updateInventoryUI();
+                    toggleCrafting(false);
+                    saveGameData();
+                } else {
+                    alert('Need 3 leaves.');
+                }
+            }
+        }
+
+        function setupButton(id, callback) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); callback(true); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); callback(false); });
+            btn.addEventListener('mousedown', () => callback(true));
+            btn.addEventListener('mouseup', () => callback(false));
+            btn.addEventListener('mouseleave', () => callback(false));
+        }
+
+        function handleKey(e, state) {
+            switch (e.code) {
+                case 'KeyW': case 'ArrowUp': moveForward = state; break;
+                case 'KeyA': case 'ArrowLeft': moveLeft = state; break;
+                case 'KeyS': case 'ArrowDown': moveBackward = state; break;
+                case 'KeyD': case 'ArrowRight': moveRight = state; break;
+            }
+        }
+
+        function createHouse() {
+            const houseGroup = new THREE.Group();
+            const wallsMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.8 });
+            const walls = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 8), wallsMat);
+            walls.position.y = 2.5;
+            walls.castShadow = true;
+            walls.receiveShadow = true;
+            houseGroup.add(walls);
+
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(6.5, 3, 4), new THREE.MeshStandardMaterial({ color: 0x2b1b12, roughness: 0.9 }));
+            roof.position.y = 6.5;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            houseGroup.add(roof);
+
+            const door = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.8, 0.25), new THREE.MeshStandardMaterial({ color: 0x20120a }));
+            door.position.set(0, 1.4, 4.05);
+            houseGroup.add(door);
+
+            scene.add(houseGroup);
+        }
+
+        function createForest() {
+            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.7, 5, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.9 });
+            const leavesGeo = new THREE.ConeGeometry(2.5, 7, 6);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x142b14, roughness: 0.95 });
+
+            for (let i = 0; i < 200; i++) {
+                const x = (Math.random() - 0.5) * 250;
+                const z = (Math.random() - 0.5) * 250;
+                if (Math.abs(x) < 10 && Math.abs(z) < 10) continue;
+
+                const treeGroup = new THREE.Group();
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 2.5;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+
+                const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+                leaves.position.y = 6.5;
+                leaves.castShadow = true;
+                treeGroup.add(leaves);
+
+                treeGroup.position.set(x, 0, z);
+                scene.add(treeGroup);
+                trees.push({ group: treeGroup, x: x, z: z, radius: 0.7 });
+            }
+        }
+
+        function createRabbits() {
+            const rabbitMat = new THREE.MeshStandardMaterial({ color: 0xd3d3d3, roughness: 0.9 });
+            for (let i = 0; i < 15; i++) {
+                const rGroup = new THREE.Group();
+
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.7), rabbitMat);
+                body.position.y = 0.2;
+                body.castShadow = true;
+                rGroup.add(body);
+
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), rabbitMat);
+                head.position.set(0, 0.4, 0.35);
+                rGroup.add(head);
+
+                const earGeo = new THREE.BoxGeometry(0.06, 0.25, 0.06);
+                const leftEar = new THREE.Mesh(earGeo, rabbitMat);
+                leftEar.position.set(-0.08, 0.65, 0.3);
+                rGroup.add(leftEar);
+                const rightEar = new THREE.Mesh(earGeo, rabbitMat);
+                rightEar.position.set(0.08, 0.65, 0.3);
+                rGroup.add(rightEar);
+
+                const x = (Math.random() - 0.5) * 220;
+                const z = (Math.random() - 0.5) * 220;
+                if (Math.abs(x) < 12 && Math.abs(z) < 12) continue;
+
+                rGroup.position.set(x, 0, z);
+                scene.add(rGroup);
+                rabbits.push({ group: rGroup, x: x, z: z });
+            }
+        }
+
+        function chopTree() {
+            if (nearestTree) {
+                scene.remove(nearestTree.group);
+                const index = trees.indexOf(nearestTree);
+                if (index > -1) trees.splice(index, 1);
+
+                inventory[1].count += 4;
+                inventory[2].count += 3;
+                updateInventoryUI();
+                saveGameData();
+
+                nearestTree = null;
+                document.getElementById('btn-chop').style.display = 'none';
+            }
+        }
+
+        function killRabbit() {
+            if (nearestRabbit) {
+                scene.remove(nearestRabbit.group);
+                const index = rabbits.indexOf(nearestRabbit);
+                if (index > -1) rabbits.splice(index, 1);
+
+                inventory[3].count += 1;
+                updateInventoryUI();
+                saveGameData();
+
+                nearestRabbit = null;
+                document.getElementById('btn-kill-rabbit').style.display = 'none';
+            }
+        }
+
+        function checkCollisions(pos) {
+            if (pos.x > -4.5 && pos.x < 4.5 && pos.z > -4.5 && pos.z < 4.5) return true;
+            
+            for (let i = 0; i < trees.length; i++) {
+                const t = trees[i];
+                const dx = pos.x - t.x;
+                const dz = pos.z - t.z;
+                if ((dx * dx + dz * dz) < (t.radius + 0.4) * (t.radius + 0.4)) return true;
+            }
+
+            for (let i = 0; i < placedWalls.length; i++) {
+                const w = placedWalls[i];
+                const dx = pos.x - w.x;
+                const dz = pos.z - w.z;
+                if ((dx * dx + dz * dz) < w.radius * w.radius) return true;
+            }
+
+            return false;
+        }
+
+        function updateInteractions() {
+            nearestTree = null;
+            let minTreeDist = 3.5;
+            for (let i = 0; i < trees.length; i++) {
+                const dist = camera.position.distanceTo(trees[i].group.position);
+                if (dist < minTreeDist) {
+                    minTreeDist = dist;
+                    nearestTree = trees[i];
+                }
+            }
+            const chopBtn = document.getElementById('btn-chop');
+            if (nearestTree && inventory[0].count > 0) {
+                chopBtn.style.display = 'block';
+            } else {
+                chopBtn.style.display = 'none';
+            }
+
+            nearestRabbit = null;
+            let minRabbitDist = 3.0;
+            for (let i = 0; i < rabbits.length; i++) {
+                const dist = camera.position.distanceTo(rabbits[i].group.position);
+                if (dist < minRabbitDist) {
+                    minRabbitDist = dist;
+                    nearestRabbit = rabbits[i];
+                }
+            }
+            const rabbitBtn = document.getElementById('btn-kill-rabbit');
+            if (nearestRabbit && inventory[0].count > 0) {
+                rabbitBtn.style.display = 'block';
+            } else {
+                rabbitBtn.style.display = 'none';
+            }
+        }
+
+        function updateHPUI() {
+            document.getElementById('hp-display').innerText = `❤️ HP: ${Math.max(0, Math.floor(playerHP))}`;
+        }
+
+        function triggerDamageFlash() {
+            const flash = document.getElementById('damage-flash');
+            flash.style.background = 'rgba(255, 0, 0, 0.4)';
+            setTimeout(() => {
+                flash.style.background = 'rgba(255, 0, 0, 0)';
+            }, 150);
+        }
+
+        function saveGameData() {
+            const saveData = {
+                hp: playerHP,
+                inventory: inventory,
+                walls: placedWalls.map(w => ({ x: w.x, z: w.z })),
+                campfires: campfires.map(c => ({ x: c.x, z: c.z })),
+                torches: torches.map(t => ({ x: t.x, z: t.z }))
+            };
+            localStorage.setItem('horror_forest_save', JSON.stringify(saveData));
+            console.log('Game Saved!');
+        }
+
+        function loadGameData() {
+            const saved = localStorage.getItem('horror_forest_save');
+            if (!saved) return;
+            try {
+                const data = JSON.parse(saved);
+                if (data.hp !== undefined) playerHP = data.hp;
+                if (data.inventory) inventory = data.inventory;
+                if (data.walls) {
+                    data.walls.forEach(w => placeWall(w));
+                }
+                if (data.campfires) {
+                    data.campfires.forEach(c => placeCampfire(c));
+                }
+                if (data.torches) {
+                    data.torches.forEach(t => placeTorch(t));
+                }
+                console.log('Game Loaded Successfully!');
+            } catch (e) {
+                console.error('Error loading save data', e);
+            }
+        }
+
+        function resetGameSave() {
+            localStorage.removeItem('horror_forest_save');
+            location.reload();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameIsOver) return;
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            prevTime = time;
+
+            campfires.forEach(cf => {
+                cf.light.intensity = cf.baseIntensity + Math.sin(time * 0.02) * 1.2;
+                if (cf.flame) {
+                    cf.flame.scale.y = 1 + Math.sin(time * 0.03) * 0.2;
+                }
+            });
+
+            torches.forEach(t => {
+                t.light.intensity = 4.0 + Math.sin(time * 0.03) * 0.5;
+            });
+
+            const currentSpeed = isSprinting ? 10.0 : 6.0;
+            const speed = currentSpeed * delta;
+            const forwardVector = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forwardVector.y = 0; forwardVector.normalize();
+
+            const sideVector = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            sideVector.y = 0; sideVector.normalize();
+
+            const moveVector = new THREE.Vector3();
+            if (moveForward) moveVector.add(forwardVector);
+            if (moveBackward) moveVector.sub(forwardVector);
+            if (moveRight) moveVector.add(sideVector);
+            if (moveLeft) moveVector.sub(sideVector);
+            moveVector.normalize();
+
+            if (moveVector.lengthSq() > 0) {
+                const nextPos = camera.position.clone().addScaledVector(moveVector, speed);
+                if (!checkCollisions(nextPos)) {
+                    camera.position.copy(nextPos);
+                }
+            }
+
+            camera.position.x = Math.max(-120, Math.min(120, camera.position.x));
+            camera.position.z = Math.max(-120, Math.min(120, camera.position.z));
+            camera.position.y = 1.8;
+
+            // Cat Pet movement & visibility logic
+            if (catPetGroup) {
+                if (monsterSpawned) {
+                    catPetGroup.visible = false; // Cat is terrified and hides when Baarnen appears!
+                } else {
+                    catPetGroup.visible = true;
+                    const targetCatPos = camera.position.clone().add(new THREE.Vector3(1.2, 0, 1.2));
+                    catPetGroup.position.lerp(targetCatPos, 0.08);
+                    catPetGroup.lookAt(camera.position.x, catPetGroup.position.y, camera.position.z);
+                }
+            }
+
+            if (monsterSpawned && monsterGroup) {
+                let speedMultiplier = 1.0;
+                for(let i = 0; i < traps.length; i++) {
+                    if(monsterGroup.position.distanceTo(traps[i].position) < 1.5) {
+                        speedMultiplier = 0.3;
+                    }
+                }
+
+                const nextMonsterPos = monsterGroup.position.clone();
+                monsterGroup.lookAt(camera.position.x, monsterGroup.position.y, camera.position.z);
+                monsterGroup.translateZ(monsterSpeed * speedMultiplier * delta);
+
+                for (let i = 0; i < placedWalls.length; i++) {
+                    const w = placedWalls[i];
+                    if (monsterGroup.position.distanceTo(new THREE.Vector3(w.x, 0, w.z)) < 1.4) {
+                        monsterGroup.position.copy(nextMonsterPos);
+                        break;
+                    }
+                }
+
+                const animTime = time * 0.012;
+                const leftArm = monsterGroup.getObjectByName("leftArm");
+                const rightArm = monsterGroup.getObjectByName("rightArm");
+                const leftLeg = monsterGroup.getObjectByName("leftLeg");
+                const rightLeg = monsterGroup.getObjectByName("rightLeg");
+
+                if (leftArm && rightArm && leftLeg && rightLeg) {
+                    leftArm.rotation.x = Math.sin(animTime) * 0.7;
+                    rightArm.rotation.x = -Math.sin(animTime) * 0.7;
+                    leftLeg.rotation.x = -Math.sin(animTime) * 0.7;
+                    rightLeg.rotation.x = Math.sin(animTime) * 0.7;
+                }
+
+                if (monsterGroup.position.distanceTo(camera.position) < 2.0) {
+                    playerHP -= 25 * delta;
+                    updateHPUI();
+                    triggerDamageFlash();
+                    if (playerHP <= 0) {
+                        triggerJumpscare();
+                    }
+                }
+            }
+
+            updateInteractions();
+            renderer.render(scene, camera);
+        }
+
+        function triggerJumpscare() {
+            gameIsOver = true;
+            document.getElementById('jumpscare-screen').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
